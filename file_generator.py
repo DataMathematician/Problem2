@@ -37,7 +37,6 @@ size = 1073741824
 if __name__ == '__main__':
 
     path = 'D:\\sber\\Problem2\\'  # расположение файла
-    n_files = 1
     len_str = 100000
     size = 1073741824
     n_files = 20
@@ -51,4 +50,3 @@ if __name__ == '__main__':
 
     for proc in procs:
         proc.join()
-    
