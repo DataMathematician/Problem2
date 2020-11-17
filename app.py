@@ -26,7 +26,7 @@ from models import *
 Base.metadata.create_all(bind=engine) # создаст схему бд после запуска app
 
 
-@app.route('/tutorials',methods = ['GET']) 
+@app.route('/',methods = ['GET']) 
 def get_data(): # метод приложения на flask позволяет обратабывать запросы к серверу 
     '''
     возврат данных из базы
@@ -40,16 +40,16 @@ def get_data(): # метод приложения на flask позволяет 
             'volume': bigdata.volume})
     return jsonify(serialized)
 
-@app.route('/tutorials',methods=['POST'])
-def add_data():
-    new_one = BigData(**request.json)
-    session.add(new_one)
-    session.commit()
-    serialized = {
-        'id':new_one.id,
-        'name':new_one.name,
-        'volume':new_one.volume}
-    return jsonify(serialized)
+#@app.route('/',methods=['POST'])
+#def add_data():
+#    new_one = BigData(**request.json)
+#    session.add(new_one)
+#    session.commit()
+#    serialized = {
+#        'id':new_one.id,
+#        'name':new_one.name,
+#        'volume':new_one.volume}
+#    return jsonify(serialized)
 
 @app.route('/<int:lfn>', methods=['POST'])
 def findnumber(lfn):
@@ -63,8 +63,6 @@ def findnumber(lfn):
                 for row in current_csv:
                     t = len(row)
                     global_count += row.count(str(lfn))
-            #json_file = {'name':name, 'volume':global_count}
-            #json_file = json.dumps(json_file)
             new_one = BigData(name = name,volume = global_count)
             session.add(new_one)
             session.commit()
@@ -74,7 +72,7 @@ def findnumber(lfn):
     return 'Ok!'
     
 
-@app.route('/tutorials/<int:tutorial_id>',methods=['PUT'])
+@app.route('/<int:tutorial_id>',methods=['PUT'])
 def update_table(tutorial_id):
     item = BigData.query.filter(BigData.id == tutorial_id).first()
     params  = request.json
@@ -89,7 +87,7 @@ def update_table(tutorial_id):
         'volume':new_one.volume}
     return serialized
 
-@app.route('/tutorials/<int:tutorial_id>',methods=['DELETE'])
+@app.route('/<int:tutorial_id>',methods=['DELETE'])
 def delete_data(tutorial_id):
     item = BigData.query.filter(BigData.id == tutorial_id).first()
     if not item:
@@ -106,4 +104,3 @@ def shutdown_request(exception=None):
 
 if __name__ == '__main__':
     app.run()
-    
