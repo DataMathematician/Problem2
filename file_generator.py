@@ -1,52 +1,72 @@
-import os
-import random
-from multiprocessing import Process
+import multiprocessing as mp
+import time
+from numpy import random
+from timeit import default_timer as timer
+import sys
 
-class FileGen():
-    def __call__(self,n_files,path,file_num,len_str,size):
+def worker(chunk_size,n_process, q):
+    '''stupidly simulates long running process'''
 
-        def string_generator(len_str):
-            '''
-            Генератор строки
-            '''
-            nums = []                                       
-            for i in range(len_str):                       
-                nums.append(str(random.randrange(0,100)))         
-            yield nums
+    start = time.clock()
+    nums = []
+    print(q)
+    while sys.getsizeof(nums) <= chunk_size:
+        e =random.randint(100,size = 500)
+        e = map(str,e)
+        e = ','.join(e)+'\n'
+        nums.append(e)
+  
+    done = time.clock() - start
+    print('Done:', str(sys.getsizeof(nums)), done)
+    q.put(nums)
+    return nums
 
-        def filemaker(n_name, p):
-            '''
-            Генератор
-            '''
-            name = 'num_data_{}.csv'.format(n_name)
-            name = path+name
-            new_file = open(name,'w')
-            while os.stat(name).st_size < size:
-                string = ','.join(list(string_generator(len_str))[0]) 
-                #string = ','.join((list((str(random.randrange(0,100)) for x in range(len_str))))) # генератор строки, которая кладется в файл
-                new_file.write(string)
+def listener(name,q):
+    '''listens for messages on the q, writes to file. '''
 
-        for i in range(n_files):
-            filemaker(file_num, path)
+    with open(name, 'w') as f:
+        while 1:
+            m = q.get()
+            print(sys.getsizeof(m))
+            if m == 'kill':
+                break
+            f.writelines(m)
+            f.flush()
 
-path = 'D:\\sber\\Problem2\\'  # расположение файла
-n_files = 2
-len_str = 1000
-size = 1073741824
+def main(name):
+    #must use Manager queue here, or will not work
+    manager = mp.Manager()
+    q = manager.Queue()    
+    pool = mp.Pool(mp.cpu_count())
 
-if __name__ == '__main__':
+    #put listener to work first
+    watcher = pool.apply_async(listener, (name, q))
 
-    path = 'D:\\sber\\Problem2\\'  # расположение файла
-    len_str = 100000
-    size = 1073741824
-    n_files = 20
+    #fire off workers
+    jobs = []
+    for i in range(n_process):
+        job = pool.apply_async(worker, (chunk_size,n_process, q))
+        jobs.append(job)
 
-    procs = []
-    for num in range(n_files):
-        t = FileGen()
-        proc = Process(target = t,kwargs={'n_files':1,'path':'D:\\sber\\Problem2\\','file_num': num,'len_str':len_str,'size':1073741824})
-        procs.append(proc)
-        proc.start()
+    # collect results from the workers through the pool result queue
+    for job in jobs: 
+        job.get()
 
-    for proc in procs:
-        proc.join()
+    #now we are done, kill the listener
+    q.put('kill')
+    pool.close()
+    pool.join()
+
+if __name__ == "__main__":
+    size = 6850000  # размер файла
+    n_files = 20    # кол-во файлов
+    n_process = 16 # кол-во процессов
+    chunk_size = size / n_process 
+    path = 'D:\\sber\\Problem2\\'
+
+    for f in range(n_files):
+        print('File: ',f)
+        name = path + 'test_data_{}.txt'.format(f)
+        main(name)
+        print()
+        print()
