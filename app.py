@@ -55,19 +55,21 @@ def add_data():
 def findnumber(lfn):
     try:
         path = 'D:\\sber\\Problem2\\'
-        files = glob.glob(path + "*.csv")
+        keeper = Ansvers() #объект временного хранилища
+        files = glob.glob(path + "*.txt")
         while len(files) != 0:
             name = files.pop()
             with open(name,'r') as current_csv:
                 global_count = 0
                 for row in current_csv:
-                    t = len(row)
                     global_count += row.count(str(lfn))
-            #json_file = {'name':name, 'volume':global_count}
-            #json_file = json.dumps(json_file)
-            new_one = BigData(name = name,volume = global_count)
+            keeper.get_values(name,global_count)
+        names,volumes = keeper.give_values()
+
+        for i in range(len(names)):
+            new_one = BigData(name = names[i],volume = volumes[i])
             session.add(new_one)
-            session.commit()
+        session.commit()
     except Exception as e:
         logger.warning(f'Entered wrong data!')
         return {'message': str(e)}, 400
@@ -101,6 +103,29 @@ def delete_data(tutorial_id):
 @app.teardown_appcontext
 def shutdown_request(exception=None):
     session.remove()
+
+class Ansvers:
+    '''
+    Temporary repository
+    '''
+    def __init__(self):
+        self.name_list = [] # список имен файлов
+        self.volume_list = [] # список кол-ва вхождений подстроки в файл
+
+    def get_values(self,name,volume):
+        '''
+        Получает данные из каждого файла
+        '''
+        self.name_list.append(name)
+        self.volume_list.append(volume)
+
+    def give_values(self):
+        '''
+        Возвращает все полученные данные
+        '''
+        return self.name_list,self.volume_list
+
+        
 
 
 
